@@ -4,7 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import org.springframework.web.multipart.MultipartFile;
 import svc.library.unibitdiplomna.dto.*;
 
 import java.time.LocalDate;
@@ -137,7 +140,7 @@ public class LibraryDao
     template.update(sql,sp);
   }
 
-  public void addBook(BookRequest book)
+  public Integer addBook(BookRequest book)
   {
     final String sql =
         ""
@@ -165,7 +168,12 @@ public class LibraryDao
         .addValue("stock",book.getStock())
         .addValue("dt", book.getPublishDate());
 
-    template.update(sql,sp);
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+
+    template.update(sql,sp, keyHolder);
+
+    return keyHolder.getKey().intValue();
+
   }
 
   public void updateQuantity(Integer id, Integer stock)
@@ -456,6 +464,55 @@ public class LibraryDao
      return new ArrayList<>();
     }
 
+  }
+
+  public Integer insertFile(MultipartFile file, Integer bookId)
+  {
+    final String sql =
+        ""
+            +" INSERT INTO file "
+            +"  (               "
+            +"    absolute_path "
+            +"   ,file_name     "
+            +"   ,bookId        "
+            +"   ,id            "
+            +"  )               "
+            +" VALUES           "
+            +"  (               "
+            +"   :path          "
+            +"  ,:name          "
+            +"  ,:bookId        "
+            +"  ,:bookId        "
+            +"  )               "
+        ;
+
+    MapSqlParameterSource sp = new MapSqlParameterSource()
+        .addValue("path"  ,"C:\\Users\\Hristiyan\\Desktop\\master-project-FE\\src\\files"+file.getOriginalFilename())
+        .addValue("name"  ,file.getOriginalFilename())
+        .addValue("bookId",bookId);
+
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+
+
+    template.update(sql,sp,keyHolder);
+
+    return keyHolder.getKey().intValue();
+
+  }
+
+  public String loadFileName(String fileId)
+  {
+    final String sql =
+        ""
+            +"SELECT file_name        "
+            +"FROM  file              "
+            +"WHERE id = :bookId      "
+        ;
+    try{
+      return template.queryForObject(sql,new MapSqlParameterSource("bookId",fileId),String.class);
+    }catch (EmptyResultDataAccessException ex){
+      return null;
+    }
   }
 
 }

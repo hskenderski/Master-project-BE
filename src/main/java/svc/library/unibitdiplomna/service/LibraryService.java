@@ -1,12 +1,18 @@
 package svc.library.unibitdiplomna.service;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import svc.library.unibitdiplomna.dao.LibraryDao;
 import svc.library.unibitdiplomna.dto.*;
 import svc.library.unibitdiplomna.exceptions.InvalidException;
 import svc.library.unibitdiplomna.validators.LibraryValidator;
+import org.springframework.core.io.Resource;
 
 import java.util.List;
 
@@ -17,12 +23,15 @@ public class LibraryService
   private final LibraryDao libraryDao;
   private final   LibraryValidator      libraryValidator;
   private final BCryptPasswordEncoder passwordEncoder;
+  private final FileStorageService fileStorageService;
 
 
-  public LibraryService(LibraryDao libraryDao, LibraryValidator libraryValidator, BCryptPasswordEncoder passwordEncoder){
+  public LibraryService(LibraryDao libraryDao, LibraryValidator libraryValidator, BCryptPasswordEncoder passwordEncoder
+  ,FileStorageService fileStorageService){
     this.libraryDao = libraryDao;
     this.libraryValidator = libraryValidator;
     this.passwordEncoder = passwordEncoder;
+    this.fileStorageService = fileStorageService;
   }
 
   public void registration(UserRequest userRequest)
@@ -45,9 +54,9 @@ public class LibraryService
     libraryDao.updateUser(userRequest, email);
   }
 
-  public void addBook(BookRequest book)
+  public Integer addBook(BookRequest book)
   {
-    libraryDao.addBook(book);
+   return libraryDao.addBook(book);
   }
 
   public void updateQuantity(Integer id, Integer stock)
@@ -92,5 +101,27 @@ public class LibraryService
 
   public List<BookResponse> searchBook(BookSearchCriteria criteria){
     return libraryDao.searchBook(criteria);
+  }
+
+  public void uploadFile(MultipartFile file, Integer itemId, final String email)
+  {
+//    shopValidator.validateItemId(itemId,email);
+
+    KeyHolder keyHolder = new GeneratedKeyHolder();
+
+    Integer id = libraryDao.insertFile(file,itemId);
+    try {
+      fileStorageService.save(file, id);
+    }
+    catch (Exception ex) {
+      throw new InvalidException(String.format("Could not upload the file: %s!",file.getOriginalFilename()));
+    }
+    System.gc();
+  }
+
+  public ResponseEntity<Resource> loadFile(final String fileName)
+  {
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename= "+libraryDao.loadFileName(fileName)).body(fileStorageService.load(fileName));
   }
 }

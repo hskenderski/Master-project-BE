@@ -1,15 +1,21 @@
 package svc.library.unibitdiplomna.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.CurrentSecurityContext;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import svc.library.unibitdiplomna.dto.*;
 import svc.library.unibitdiplomna.security.TokenService;
 import svc.library.unibitdiplomna.service.LibraryService;
 import org.springframework.web.bind.annotation.CrossOrigin;
+
+import org.springframework.core.io.Resource;
 import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @RestController
@@ -58,10 +64,10 @@ public class LibraryController
 
   @PostMapping("/svc/library/book")
   @PreAuthorize("hasRole('ADMIN')")
-  @ResponseStatus(HttpStatus.CREATED)
-  public void addBook(@RequestBody @Valid BookRequest book)
+  @ResponseStatus(HttpStatus.OK)
+  public ResponseEntity<Integer> addBook(@RequestBody @Valid BookRequest book)
   {
-    libraryService.addBook(book);
+    return ResponseEntity.ok(libraryService.addBook(book));
   }
 
   @PatchMapping("/svc/library/book/{id}")
@@ -139,6 +145,24 @@ public class LibraryController
                                            @RequestParam(required = false) Integer userId)
   {
     return libraryService.loadComment(userId, authentication.getName());
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN')")
+  @PostMapping(value = "/svc/library/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  @ResponseStatus(HttpStatus.CREATED)
+  public void uploadFile(@CurrentSecurityContext(expression = "authentication")  Authentication authentication
+      ,@RequestParam("file") MultipartFile file
+      ,@RequestParam @NotNull Integer bookId)
+  {
+    libraryService.uploadFile(file,bookId,authentication.getName());
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN','USER')")
+  @GetMapping(value = "/svc/library/file")
+  @ResponseBody
+  public ResponseEntity<Resource> loadFile(@CurrentSecurityContext(expression = "authentication")  Authentication authentication
+      , @RequestParam @NotNull String bookId){
+    return libraryService.loadFile(bookId);
   }
 
 }
