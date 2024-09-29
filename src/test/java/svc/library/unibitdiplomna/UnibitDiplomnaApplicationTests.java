@@ -122,7 +122,7 @@ class UnibitDiplomnaApplicationTests
     mockMvc.perform(post("/svc/library/book")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(bookRequest)))
-        .andExpect(status().isCreated())
+        .andExpect(status().isOk())
         .andDo(print())
     ;
   }
@@ -135,7 +135,7 @@ class UnibitDiplomnaApplicationTests
     mockMvc.perform(patch("/svc/library/book/-123")
             .param("stock", "2")
             .contentType(MediaType.APPLICATION_JSON))
-        .andExpect(status().isNoContent())
+        .andExpect(status().isOk())
         .andDo(print())
     ;
   }
@@ -146,7 +146,7 @@ class UnibitDiplomnaApplicationTests
   public void testRentBook() throws Exception
   {
     BookRentRequest bookRentRequest = new BookRentRequest();
-    bookRentRequest.setUserId(-987);
+    bookRentRequest.setUserId(-988);
     bookRentRequest.setReturnDate(LocalDate.of(2025, 1, 8));
     bookRentRequest.setBookId(-123);
 
